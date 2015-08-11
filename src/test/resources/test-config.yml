@@ -1,0 +1,13 @@
+database:
+  driverClass: org.postgresql.Driver
+  user: test
+
+environments:
+  local:
+    database:
+      url: local_url
+
+  test:
+    database:
+      driverClass: overridden
+      url: test_url
