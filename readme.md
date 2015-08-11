@@ -9,7 +9,6 @@
 
 ```yml
 # defaults
-
 logging:
   loggers:
     # output final config to log
