@@ -1,5 +1,10 @@
 # Typesafe config bundle for Dropwizard
 
+## Usage
+```java
+bootstrap.addBundle(new TypeSafeConfigBundle());
+```
+
 ## Features
 
 * .conf or .yml format supported
