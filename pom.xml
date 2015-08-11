@@ -126,4 +126,9 @@
             </plugin>
         </plugins>
     </build>
+
+    <scm>
+        <connection>scm:git:git@github.com:digipost/typesafe-config-bundle.git</connection>
+        <developerConnection>scm:git:git@github.com:digipost/typesafe-config-bundle.git</developerConnection>
+    </scm>
 </project>
