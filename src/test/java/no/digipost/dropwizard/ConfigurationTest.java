@@ -31,7 +31,7 @@ public class ConfigurationTest {
                 .addValidatedValueHandler(new OptionalValidatedValueUnwrapper())
                 .buildValidatorFactory().getValidator();
         objectMapper = Jackson.newObjectMapper();
-        configFactory = new TypeSafeConfigFactory<>(TestConfig.class, validator, objectMapper, "dw");
+        configFactory = new TypeSafeConfigFactory<>(TestConfig.class, validator, objectMapper, "dw", false);
     }
 
     @After

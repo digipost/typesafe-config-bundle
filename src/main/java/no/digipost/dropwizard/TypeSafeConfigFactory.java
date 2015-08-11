@@ -27,11 +27,14 @@ public class TypeSafeConfigFactory<T> extends ConfigurationFactory<T> {
     private static final Logger log = LoggerFactory.getLogger(TypeSafeConfigFactory.class);
 
     private final ObjectMapper mapper;
+    private final boolean includeEnvironmentAsConfigProperty;
     private final YAMLFactory yamlFactory;
 
-    public TypeSafeConfigFactory(final Class<T> klass, final Validator validator, final ObjectMapper mapper, final String propertyPrefix) {
+    public TypeSafeConfigFactory(final Class<T> klass, final Validator validator, final ObjectMapper mapper,
+                                 final String propertyPrefix, final boolean includeEnvironmentAsConfigProperty) {
         super(klass, validator, mapper, propertyPrefix);
         this.mapper = mapper;
+        this.includeEnvironmentAsConfigProperty = includeEnvironmentAsConfigProperty;
         this.yamlFactory = new YAMLFactory();
     }
 
@@ -50,7 +53,14 @@ public class TypeSafeConfigFactory<T> extends ConfigurationFactory<T> {
             if (!env.isPresent()) {
                 throw new RuntimeException("System.property " + ENV_KEY + " is required and must have a corresponding section in the config file. Example: -Denv=local");
             }
-            final Config envConfig = env.map(applyOverrides(config)).orElse(config).withValue("environment", ConfigValueFactory.fromAnyRef(env.get()));
+
+            final Config envPreConfig = env.map(applyOverrides(config)).orElse(config);
+            final Config envConfig;
+            if (includeEnvironmentAsConfigProperty) {
+                envConfig = envPreConfig.withValue("environment", ConfigValueFactory.fromAnyRef(env.get()));
+            } else {
+                envConfig = envPreConfig;
+            }
 
             final Optional<String> secret = Optional.ofNullable(System.getProperty(SECRET_KEY));
             final Config secretConfig = secret.map(this::loadSecret).orElse(ConfigFactory.empty());
