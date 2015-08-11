@@ -1,4 +1,4 @@
-package no.posten.digipost.dropwizard;
+package no.digipost.dropwizard;
 
 import io.dropwizard.configuration.ConfigurationSourceProvider;
 

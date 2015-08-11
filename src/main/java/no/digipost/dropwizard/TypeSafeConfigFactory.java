@@ -1,4 +1,4 @@
-package no.posten.digipost.dropwizard;
+package no.digipost.dropwizard;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
