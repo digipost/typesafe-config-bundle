@@ -67,7 +67,7 @@ public class TypeSafeConfigFactory<T> extends ConfigurationFactory<T> {
             final Config configWithSecrets = secretConfig.withFallback(envConfig);
 
             final Config finalConfig = configWithSecrets.withoutPath(ENVIRONMENTS_CONFIG_KEY);
-            final ConfigObject rootConfigObject = finalConfig.resolve().root();
+            final ConfigObject rootConfigObject = finalConfig.resolve().withoutPath("variables").root();
 
             logConfig(finalConfig, rootConfigObject);
 

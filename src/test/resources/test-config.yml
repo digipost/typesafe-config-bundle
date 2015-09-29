@@ -1,9 +1,15 @@
+variables:
+  testvar1: "default variable value"
+
 database:
   driverClass: org.postgresql.Driver
   user: test
+  password: ${variables.testvar1}
 
 environments:
   local:
+    variables:
+      testvar1: "overridden variable value"
     database:
       url: local_url
 
