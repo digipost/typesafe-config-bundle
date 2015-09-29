@@ -85,6 +85,22 @@ public class ConfigurationTest {
         assertThat(config.database.getPassword(), is("secret_password"));
     }
 
+    @Test
+    public void should_interpolate_variables() throws IOException, ConfigurationException {
+        setEnv("test");
+        final TestConfig config =
+                configFactory.build(configSourceProvider, "test-config.yml");
+        assertThat(config.database.getPassword(), is("default variable value"));
+    }
+
+    @Test
+    public void should_interpolate_variables_with_overrides() throws IOException, ConfigurationException {
+        setEnv("local");
+        final TestConfig config =
+                configFactory.build(configSourceProvider, "test-config.yml");
+        assertThat(config.database.getPassword(), is("overridden variable value"));
+    }
+
     private void setEnv(final String env) {
         System.setProperty(ENV_KEY, env);
     }
