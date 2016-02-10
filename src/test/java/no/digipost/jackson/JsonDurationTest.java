@@ -42,7 +42,7 @@ public class JsonDurationTest {
     }
 
     @Property
-    public void stringRepresentationOfItselfIsParable(int amount, @ValuesOf ChronoUnit unit) {
+    public void stringRepresentationOfItselfIsParsable(int amount, @ValuesOf ChronoUnit unit) {
         assumeThat(unit, isIn(supportedUnits));
 
         JsonDuration parsed = JsonDuration.of(amount + " " + unit.name());
