@@ -12,11 +12,12 @@ import org.junit.Test;
 
 import javax.validation.Validation;
 import javax.validation.Validator;
+
 import java.io.IOException;
 
 import static no.digipost.dropwizard.TypeSafeConfigFactory.ENV_KEY;
 import static no.digipost.dropwizard.TypeSafeConfigFactory.SECRET_KEY;
-import static org.hamcrest.core.Is.is;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
 public class ConfigurationTest {
