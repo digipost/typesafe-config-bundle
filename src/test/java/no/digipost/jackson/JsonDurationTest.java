@@ -24,10 +24,10 @@ public class JsonDurationTest {
 
     @Test
     public void correctEqualsAndHashcode() {
-        EqualsVerifier.forExamples(
-                JsonDuration.of("2 hours"),
-                JsonDuration.of("5 days"),
-                JsonDuration.of("1337 nanos"));
+        EqualsVerifier
+            .forRelaxedEqualExamples(JsonDuration.of("1 days"), JsonDuration.of("24 hours"), JsonDuration.of("1440 minutes"))
+            .andUnequalExamples(JsonDuration.of("4 days"), JsonDuration.of("5 days"), JsonDuration.of("1337 nanos"))
+            .verify();
 
         assertThat(JsonDuration.of("1 days"), is(JsonDuration.of("24 hours")));
         assertThat(JsonDuration.of("42 minutes"), not("42 minutes"));
