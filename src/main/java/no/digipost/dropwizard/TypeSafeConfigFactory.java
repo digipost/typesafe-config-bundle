@@ -5,12 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.typesafe.config.*;
 import io.dropwizard.configuration.ConfigurationException;
-import io.dropwizard.configuration.ConfigurationFactory;
 import io.dropwizard.configuration.ConfigurationSourceProvider;
+import io.dropwizard.configuration.YamlConfigurationFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.validation.Validator;
+
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
@@ -18,7 +19,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-public class TypeSafeConfigFactory<T> extends ConfigurationFactory<T> {
+public class TypeSafeConfigFactory<T> extends YamlConfigurationFactory<T> {
 
     public static final String ENV_KEY = "env";
     public static final String SECRET_KEY = "secret";
