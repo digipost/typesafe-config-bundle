@@ -58,7 +58,7 @@ you must remember to push to remote:
 git push --follow-tags
 ```
 
-You can configure Git to always also push relevant tags when pushing branches, and then you can omit `--follow-tags`:
+You can config Git to always also push relevant tags when pushing branches, and then you can omit `--follow-tags`:
 
 ```bash
 git configure --global push.followTags true  # this is only needed once
