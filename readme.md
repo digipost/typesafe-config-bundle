@@ -62,5 +62,5 @@ You can configure Git to always also push relevant tags when pushing branches, a
 
 ```bash
 git config --global push.followTags true  # this is only needed once
-git push                                     # and then you can push and --follow-tags will be implied
+git push                                  # and then you can push and --follow-tags will be implied
 ```
