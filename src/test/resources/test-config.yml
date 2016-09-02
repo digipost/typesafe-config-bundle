@@ -17,3 +17,8 @@ environments:
     database:
       driverClass: overridden
       url: test_url
+
+  test2:
+    database:
+      driverClass: ${driverClassSystemProperty}
+      url: test_url
