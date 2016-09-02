@@ -43,12 +43,14 @@ public class TypeSafeConfigFactory<T> extends YamlConfigurationFactory<T> {
     public T build(final ConfigurationSourceProvider provider, final String path) throws IOException, ConfigurationException {
         try (InputStream input = provider.open(path)) {
 
-            final Config config;
+            final Config loaded;
             if (path.endsWith(".yml")) {
-                config = loadYamlConfig(input);
+                loaded = loadYamlConfig(input);
             } else {
-                config = loadConfig(input);
+                loaded = loadConfig(input);
             }
+
+            final Config config = loaded.resolveWith(ConfigFactory.defaultOverrides(), ConfigResolveOptions.defaults().setAllowUnresolved(true));
 
             final Optional<String> env = Optional.ofNullable(System.getProperty(ENV_KEY)).filter(not(String::isEmpty));
             if (!env.isPresent()) {

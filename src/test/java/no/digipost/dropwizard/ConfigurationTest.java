@@ -8,6 +8,7 @@ import io.dropwizard.jackson.Jackson;
 import io.dropwizard.validation.valuehandling.OptionalValidatedValueUnwrapper;
 import org.hibernate.validator.HibernateValidator;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import javax.validation.Validation;
@@ -35,10 +36,16 @@ public class ConfigurationTest {
         configFactory = new TypeSafeConfigFactory<>(TestConfig.class, validator, objectMapper, "dw", false);
     }
 
+    @Before
+    public void setUp() {
+        System.setProperty("driverClassSystemProperty", "driverClassFromSystemProperty");
+    }
+
     @After
-    public void clearEnvironmentProperties() {
+    public void tearDown() {
         System.clearProperty(ENV_KEY);
         System.clearProperty(SECRET_KEY);
+        System.clearProperty("driverClassSystemProperty");
     }
 
     @Test
@@ -100,6 +107,14 @@ public class ConfigurationTest {
         final TestConfig config =
                 configFactory.build(configSourceProvider, "test-config.yml");
         assertThat(config.database.getPassword(), is("overridden variable value"));
+    }
+
+    @Test
+    public void should_resolve_system_properties() throws IOException, ConfigurationException {
+        setEnv("test2");
+        final TestConfig config =
+                configFactory.build(configSourceProvider, "test-config.yml");
+        assertThat(config.database.getDriverClass(), is("driverClassFromSystemProperty"));
     }
 
     private void setEnv(final String env) {
