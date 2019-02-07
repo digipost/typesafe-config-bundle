@@ -1,5 +1,7 @@
 # Typesafe config bundle for Dropwizard
 
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/no.digipost/typesafe-config-bundle/badge.svg)](https://maven-badges.herokuapp.com/maven-central/no.digipost/typesafe-config-bundle)
+
 ## Usage
 ```java
 bootstrap.addBundle(new TypeSafeConfigBundle());
