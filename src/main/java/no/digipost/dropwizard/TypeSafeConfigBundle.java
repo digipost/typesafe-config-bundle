@@ -1,10 +1,9 @@
 package no.digipost.dropwizard;
 
-import io.dropwizard.Bundle;
+import io.dropwizard.ConfiguredBundle;
 import io.dropwizard.setup.Bootstrap;
-import io.dropwizard.setup.Environment;
 
-public class TypeSafeConfigBundle implements Bundle {
+public class TypeSafeConfigBundle<C> implements ConfiguredBundle<C> {
 
     private final boolean includeEnvironmentInConfig;
 
@@ -12,20 +11,16 @@ public class TypeSafeConfigBundle implements Bundle {
         this(false);
     }
 
-    public TypeSafeConfigBundle(final boolean includeEnvironmentInConfig) {
+    public TypeSafeConfigBundle(boolean includeEnvironmentInConfig) {
         this.includeEnvironmentInConfig = includeEnvironmentInConfig;
     }
 
     @Override
-    public void initialize(final Bootstrap<?> bootstrap) {
+    public void initialize(Bootstrap<?> bootstrap) {
 
         bootstrap.setConfigurationFactoryFactory(
                 (c, v, m, p) -> new TypeSafeConfigFactory<>(c, v, m, p, includeEnvironmentInConfig));
         bootstrap.setConfigurationSourceProvider(new FileOrResourceConfigurationSourceProvider());
     }
 
-    @Override
-    public void run(final Environment environment) {
-
-    }
 }

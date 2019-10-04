@@ -5,7 +5,6 @@ import io.dropwizard.configuration.ConfigurationException;
 import io.dropwizard.configuration.ConfigurationFactory;
 import io.dropwizard.configuration.ConfigurationSourceProvider;
 import io.dropwizard.jackson.Jackson;
-import io.dropwizard.validation.valuehandling.OptionalValidatedValueUnwrapper;
 import org.hibernate.validator.HibernateValidator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,7 +29,6 @@ public class ConfigurationTest {
     public ConfigurationTest() {
         validator = Validation.byProvider(HibernateValidator.class)
                 .configure()
-                .addValidatedValueHandler(new OptionalValidatedValueUnwrapper())
                 .buildValidatorFactory().getValidator();
         objectMapper = Jackson.newObjectMapper();
         configFactory = new TypeSafeConfigFactory<>(TestConfig.class, validator, objectMapper, "dw", false);
