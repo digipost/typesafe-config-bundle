@@ -1,25 +1,21 @@
 package no.digipost.jackson;
 
-import com.pholser.junit.quickcheck.Property;
-import com.pholser.junit.quickcheck.generator.ValuesOf;
-import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 
 import static java.time.temporal.ChronoUnit.NANOS;
 import static no.digipost.jackson.JsonDuration.supportedUnits;
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.quicktheories.QuickTheory.qt;
+import static org.quicktheories.generators.SourceDSL.arbitrary;
+import static org.quicktheories.generators.SourceDSL.integers;
+import static org.quicktheories.generators.SourceDSL.strings;
 
-@RunWith(JUnitQuickcheck.class)
 public class JsonDurationTest {
 
     @Test
@@ -33,32 +29,30 @@ public class JsonDurationTest {
         assertThat(JsonDuration.of("42 minutes"), not("42 minutes"));
     }
 
-    @Property
-    public void parsesUnitsSupportedByJavaTimeDuration(int amount, @ValuesOf ChronoUnit unit) {
-        assumeThat(unit, isIn(supportedUnits));
-
-        JsonDuration parsed = JsonDuration.of(amount + " " + unit.name().toLowerCase());
-        assertThat(parsed.get(NANOS), is(Duration.of(amount, unit).get(NANOS)));
+    @Test
+    public void parsesUnitsSupportedByJavaTimeDuration() {
+        qt()
+            .forAll(integers().all(), arbitrary().pick(supportedUnits))
+            .checkAssert((amount, unit) -> {
+                JsonDuration parsed = JsonDuration.of(amount + " " + unit.name().toLowerCase());
+                assertThat(parsed.get(NANOS), is(Duration.of(amount, unit).get(NANOS)));
+            });
     }
 
-    @Property
-    public void stringRepresentationOfItselfIsParsable(int amount, @ValuesOf ChronoUnit unit) {
-        assumeThat(unit, isIn(supportedUnits));
-
-        JsonDuration parsed = JsonDuration.of(amount + " " + unit.name());
-        assumeThat(JsonDuration.of(parsed.toString()), is(parsed));
+    @Test
+    public void stringRepresentationOfItselfIsParsable() {
+        qt()
+            .forAll(integers().all(), arbitrary().pick(supportedUnits))
+            .as((amount, unit) -> JsonDuration.of(amount + " " + unit.name()))
+            .checkAssert(parsed -> assertThat(JsonDuration.of(parsed.toString()), is(parsed)));
 
     }
 
+    @Test
+    public void unableToParseMalforedStrings() {
+        qt()
+            .forAll(strings().allPossible().ofLengthBetween(0, 100).assuming(s -> !s.matches("\\d+ \\w\\w+")))
+            .checkAssert(notParseable -> assertThrows(JsonDuration.CannotConvertToJsonDuration.class, () -> JsonDuration.of(notParseable)));
 
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
-
-    @Property
-    public void unableToParseMalforedStrings(String anything) {
-        assumeFalse(anything.matches("\\d+ \\w\\w+"));
-
-        expectedException.expect(JsonDuration.CannotConvertToJsonDuration.class);
-        JsonDuration.of(anything);
     }
 }

@@ -7,9 +7,9 @@ import io.dropwizard.configuration.ConfigurationSourceProvider;
 import io.dropwizard.jackson.Jackson;
 import io.dropwizard.validation.valuehandling.OptionalValidatedValueUnwrapper;
 import org.hibernate.validator.HibernateValidator;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import javax.validation.Validation;
 import javax.validation.Validator;
@@ -18,8 +18,8 @@ import java.io.IOException;
 
 import static no.digipost.dropwizard.TypeSafeConfigFactory.ENV_KEY;
 import static no.digipost.dropwizard.TypeSafeConfigFactory.SECRET_KEY;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 public class ConfigurationTest {
 
@@ -36,12 +36,12 @@ public class ConfigurationTest {
         configFactory = new TypeSafeConfigFactory<>(TestConfig.class, validator, objectMapper, "dw", false);
     }
 
-    @Before
+    @BeforeEach
     public void setUp() {
         System.setProperty("driverClassSystemProperty", "driverClassFromSystemProperty");
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         System.clearProperty(ENV_KEY);
         System.clearProperty(SECRET_KEY);
