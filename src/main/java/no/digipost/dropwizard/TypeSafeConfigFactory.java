@@ -37,9 +37,11 @@ public class TypeSafeConfigFactory<T> extends YamlConfigurationFactory<T> {
 
     private final ObjectMapper mapper;
     private final YAMLFactory yamlFactory;
+    private final String propertyPrefix;
 
     public TypeSafeConfigFactory(Class<T> klass, Validator validator, ObjectMapper mapper, String propertyPrefix) {
         super(klass, validator, mapper, propertyPrefix);
+        this.propertyPrefix = propertyPrefix.endsWith(".") ? propertyPrefix : propertyPrefix + '.';
         this.mapper = mapper;
         this.yamlFactory = new YAMLFactory();
     }
@@ -50,8 +52,9 @@ public class TypeSafeConfigFactory<T> extends YamlConfigurationFactory<T> {
 
         Config config = loaded.resolveWith(ConfigFactory.defaultOverrides(), ConfigResolveOptions.defaults().setAllowUnresolved(true));
 
-        String env = Optional.ofNullable(System.getProperty(ENV_KEY))
-                .filter(envString -> !envString.isEmpty())
+        String env = Stream.of(System.getProperty(ENV_KEY), System.getProperty(propertyPrefix + ENV_KEY))
+                .filter(envString -> envString != null && !envString.isEmpty())
+                .findFirst()
                 .orElseThrow(() -> new RuntimeException(
                         "System.property " + ENV_KEY + " is required and must have a corresponding section in the config file. Example: -Denv=local"));
 
