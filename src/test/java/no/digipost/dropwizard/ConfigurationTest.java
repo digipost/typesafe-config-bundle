@@ -18,8 +18,8 @@ import javax.validation.Validator;
 
 import java.io.IOException;
 
-import static no.digipost.dropwizard.TypeSafeConfigFactory.ENV_KEY;
-import static no.digipost.dropwizard.TypeSafeConfigFactory.SECRET_KEY;
+import static no.digipost.dropwizard.TypeSafeConfigurationFactory.ENV_KEY;
+import static no.digipost.dropwizard.TypeSafeConfigurationFactory.SECRET_KEY;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -34,7 +34,7 @@ public class ConfigurationTest {
                 .configure()
                 .buildValidatorFactory().getValidator();
         objectMapper = Jackson.newObjectMapper();
-        configFactory = new TypeSafeConfigFactory<>(TestConfig.class, validator, objectMapper, "dw");
+        configFactory = new TypeSafeConfigurationFactory<>(TestConfig.class, validator, objectMapper, "dw");
     }
 
     @BeforeEach
@@ -88,7 +88,7 @@ public class ConfigurationTest {
     @Test
     public void should_load_secret_config_from_file() throws IOException, ConfigurationException {
         setEnv("local");
-        System.setProperty(TypeSafeConfigFactory.SECRET_KEY, getClass().getResource("/test-secret.yml").getFile());
+        System.setProperty(TypeSafeConfigurationFactory.SECRET_KEY, getClass().getResource("/test-secret.yml").getFile());
         final TestConfig config =
                 configFactory.build(configSourceProvider, "test-config.yml");
         assertThat(config.database.getPassword(), is("secret_password"));

@@ -27,19 +27,19 @@ import java.util.stream.Stream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-public class TypeSafeConfigFactory<T> extends YamlConfigurationFactory<T> {
+public class TypeSafeConfigurationFactory<T> extends YamlConfigurationFactory<T> {
 
     public static final String ENV_KEY = "env";
     public static final String SECRET_KEY = "secret";
     public static final String ENVIRONMENTS_CONFIG_KEY = "environments";
 
-    private static final Logger log = LoggerFactory.getLogger(TypeSafeConfigFactory.class);
+    private static final Logger log = LoggerFactory.getLogger(TypeSafeConfigurationFactory.class);
 
     private final ObjectMapper mapper;
     private final YAMLFactory yamlFactory;
     private final String propertyPrefix;
 
-    public TypeSafeConfigFactory(Class<T> klass, Validator validator, ObjectMapper mapper, String propertyPrefix) {
+    public TypeSafeConfigurationFactory(Class<T> klass, Validator validator, ObjectMapper mapper, String propertyPrefix) {
         super(klass, validator, mapper, propertyPrefix);
         this.propertyPrefix = propertyPrefix.endsWith(".") ? propertyPrefix : propertyPrefix + '.';
         this.mapper = mapper;

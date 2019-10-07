@@ -7,21 +7,27 @@ import io.dropwizard.configuration.ResourceConfigurationSourceProvider;
 import io.dropwizard.setup.Bootstrap;
 import no.digipost.dropwizard.configuration.ConfigurationSourceProviderWithFallback;
 
-public class TypeSafeConfigBundle<C> implements ConfiguredBundle<C> {
+/**
+ * Dropwizard {@link ConfiguredBundle} to support configuration with
+ * https://github.com/lightbend/config
+ *
+ * @param <C> The type of config object
+ */
+public class TypeSafeConfiguredBundle<C> implements ConfiguredBundle<C> {
 
     private final ConfigurationSourceProvider configurationSourceProvider;
 
-    public TypeSafeConfigBundle() {
+    public TypeSafeConfiguredBundle() {
         this(new ConfigurationSourceProviderWithFallback(new FileConfigurationSourceProvider(), new ResourceConfigurationSourceProvider()));
     }
 
-    public TypeSafeConfigBundle(ConfigurationSourceProvider configurationSourceProvider) {
+    public TypeSafeConfiguredBundle(ConfigurationSourceProvider configurationSourceProvider) {
         this.configurationSourceProvider = configurationSourceProvider;
     }
 
     @Override
     public void initialize(Bootstrap<?> bootstrap) {
-        bootstrap.setConfigurationFactoryFactory(TypeSafeConfigFactory::new);
+        bootstrap.setConfigurationFactoryFactory(TypeSafeConfigurationFactory::new);
         bootstrap.setConfigurationSourceProvider(configurationSourceProvider);
     }
 
