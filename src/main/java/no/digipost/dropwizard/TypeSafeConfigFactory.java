@@ -10,7 +10,6 @@ import com.typesafe.config.ConfigParseOptions;
 import com.typesafe.config.ConfigRenderOptions;
 import com.typesafe.config.ConfigResolveOptions;
 import com.typesafe.config.ConfigSyntax;
-import com.typesafe.config.ConfigValueFactory;
 import io.dropwizard.configuration.ConfigurationException;
 import io.dropwizard.configuration.ConfigurationSourceProvider;
 import io.dropwizard.configuration.YamlConfigurationFactory;
@@ -37,19 +36,16 @@ public class TypeSafeConfigFactory<T> extends YamlConfigurationFactory<T> {
     private static final Logger log = LoggerFactory.getLogger(TypeSafeConfigFactory.class);
 
     private final ObjectMapper mapper;
-    private final boolean includeEnvironmentAsConfigProperty;
     private final YAMLFactory yamlFactory;
 
-    public TypeSafeConfigFactory(Class<T> klass, Validator validator, ObjectMapper mapper,
-                                 String propertyPrefix, boolean includeEnvironmentAsConfigProperty) {
+    public TypeSafeConfigFactory(Class<T> klass, Validator validator, ObjectMapper mapper, String propertyPrefix) {
         super(klass, validator, mapper, propertyPrefix);
         this.mapper = mapper;
-        this.includeEnvironmentAsConfigProperty = includeEnvironmentAsConfigProperty;
         this.yamlFactory = new YAMLFactory();
     }
 
     @Override
-    public T build(final ConfigurationSourceProvider sourceProvider, final String path) throws IOException, ConfigurationException {
+    public T build(ConfigurationSourceProvider sourceProvider, String path) throws IOException, ConfigurationException {
         Config loaded = loadConfig(sourceProvider, path);
 
         Config config = loaded.resolveWith(ConfigFactory.defaultOverrides(), ConfigResolveOptions.defaults().setAllowUnresolved(true));
@@ -59,13 +55,7 @@ public class TypeSafeConfigFactory<T> extends YamlConfigurationFactory<T> {
                 .orElseThrow(() -> new RuntimeException(
                         "System.property " + ENV_KEY + " is required and must have a corresponding section in the config file. Example: -Denv=local"));
 
-        Config envPreConfig = applyOverrides(env, config);
-        Config envConfig;
-        if (includeEnvironmentAsConfigProperty) {
-            envConfig = envPreConfig.withValue("environment", ConfigValueFactory.fromAnyRef(env));
-        } else {
-            envConfig = envPreConfig;
-        }
+        Config envConfig = applyOverrides(env, config);
 
         Optional<Config> secretConfig = Optional.ofNullable(System.getProperty(SECRET_KEY)).map(secretsPath -> loadConfig(sourceProvider, secretsPath));
         Config configWithSecrets = secretConfig.map(c -> c.withFallback(envConfig)).orElse(envConfig);
