@@ -3,7 +3,14 @@ package no.digipost.dropwizard;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.typesafe.config.*;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+import com.typesafe.config.ConfigObject;
+import com.typesafe.config.ConfigParseOptions;
+import com.typesafe.config.ConfigRenderOptions;
+import com.typesafe.config.ConfigResolveOptions;
+import com.typesafe.config.ConfigSyntax;
+import com.typesafe.config.ConfigValueFactory;
 import io.dropwizard.configuration.ConfigurationException;
 import io.dropwizard.configuration.ConfigurationSourceProvider;
 import io.dropwizard.configuration.YamlConfigurationFactory;
@@ -12,12 +19,14 @@ import org.slf4j.LoggerFactory;
 
 import javax.validation.Validator;
 
-import java.io.*;
-import java.nio.charset.StandardCharsets;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class TypeSafeConfigFactory<T> extends YamlConfigurationFactory<T> {
 
@@ -31,8 +40,8 @@ public class TypeSafeConfigFactory<T> extends YamlConfigurationFactory<T> {
     private final boolean includeEnvironmentAsConfigProperty;
     private final YAMLFactory yamlFactory;
 
-    public TypeSafeConfigFactory(final Class<T> klass, final Validator validator, final ObjectMapper mapper,
-                                 final String propertyPrefix, final boolean includeEnvironmentAsConfigProperty) {
+    public TypeSafeConfigFactory(Class<T> klass, Validator validator, ObjectMapper mapper,
+                                 String propertyPrefix, boolean includeEnvironmentAsConfigProperty) {
         super(klass, validator, mapper, propertyPrefix);
         this.mapper = mapper;
         this.includeEnvironmentAsConfigProperty = includeEnvironmentAsConfigProperty;
@@ -40,62 +49,61 @@ public class TypeSafeConfigFactory<T> extends YamlConfigurationFactory<T> {
     }
 
     @Override
-    public T build(final ConfigurationSourceProvider provider, final String path) throws IOException, ConfigurationException {
-        try (InputStream input = provider.open(path)) {
+    public T build(final ConfigurationSourceProvider sourceProvider, final String path) throws IOException, ConfigurationException {
+        Config loaded = loadConfig(sourceProvider, path);
 
-            final Config loaded;
-            if (path.endsWith(".yml")) {
-                loaded = loadYamlConfig(input);
-            } else {
-                loaded = loadConfig(input);
-            }
+        Config config = loaded.resolveWith(ConfigFactory.defaultOverrides(), ConfigResolveOptions.defaults().setAllowUnresolved(true));
 
-            final Config config = loaded.resolveWith(ConfigFactory.defaultOverrides(), ConfigResolveOptions.defaults().setAllowUnresolved(true));
+        String env = Optional.ofNullable(System.getProperty(ENV_KEY))
+                .filter(envString -> !envString.isEmpty())
+                .orElseThrow(() -> new RuntimeException(
+                        "System.property " + ENV_KEY + " is required and must have a corresponding section in the config file. Example: -Denv=local"));
 
-            final Optional<String> env = Optional.ofNullable(System.getProperty(ENV_KEY)).filter(not(String::isEmpty));
-            if (!env.isPresent()) {
-                throw new RuntimeException("System.property " + ENV_KEY + " is required and must have a corresponding section in the config file. Example: -Denv=local");
-            }
+        Config envPreConfig = applyOverrides(env, config);
+        Config envConfig;
+        if (includeEnvironmentAsConfigProperty) {
+            envConfig = envPreConfig.withValue("environment", ConfigValueFactory.fromAnyRef(env));
+        } else {
+            envConfig = envPreConfig;
+        }
 
-            final Config envPreConfig = env.map(applyOverrides(config)).orElse(config);
-            final Config envConfig;
-            if (includeEnvironmentAsConfigProperty) {
-                envConfig = envPreConfig.withValue("environment", ConfigValueFactory.fromAnyRef(env.get()));
-            } else {
-                envConfig = envPreConfig;
-            }
+        Optional<Config> secretConfig = Optional.ofNullable(System.getProperty(SECRET_KEY)).map(secretsPath -> loadConfig(sourceProvider, secretsPath));
+        Config configWithSecrets = secretConfig.map(c -> c.withFallback(envConfig)).orElse(envConfig);
 
-            final Optional<String> secret = Optional.ofNullable(System.getProperty(SECRET_KEY));
-            final Config secretConfig = secret.map(this::loadSecret).orElse(ConfigFactory.empty());
-            final Config configWithSecrets = secretConfig.withFallback(envConfig);
+        Config finalConfig = configWithSecrets.withoutPath(ENVIRONMENTS_CONFIG_KEY);
+        ConfigObject rootConfigObject = finalConfig.resolve().withoutPath("variables").root();
 
-            final Config finalConfig = configWithSecrets.withoutPath(ENVIRONMENTS_CONFIG_KEY);
-            final ConfigObject rootConfigObject = finalConfig.resolve().withoutPath("variables").root();
+        logConfig(finalConfig, rootConfigObject);
 
-            logConfig(finalConfig, rootConfigObject);
+        String configJsonString = rootConfigObject.render(ConfigRenderOptions.concise());
+        return super.build(str -> new ByteArrayInputStream(configJsonString.getBytes(UTF_8)), path);
+    }
 
-            final String configJsonString = rootConfigObject.render(ConfigRenderOptions.concise());
-            return super.build(
-                    str -> new ByteArrayInputStream(configJsonString.getBytes(StandardCharsets.UTF_8)), path);
+    private Config loadConfig(ConfigurationSourceProvider sourceProvider, String path) {
+        try (InputStream source = sourceProvider.open(path)) {
+            return path.endsWith(".yml") ? loadYamlConfig(source) : loadConfig(source);
+        } catch (IOException e) {
+            throw new RuntimeException(
+                    "Unable to load config from '" + path + "', because " +
+                    e.getClass().getSimpleName() + ": '" + e.getMessage() + "'", e);
         }
     }
 
-    private Config loadConfig(final InputStream input) {
-        final Config config;InputStreamReader inputReader = new InputStreamReader(input, StandardCharsets.UTF_8);
-        config = ConfigFactory.parseReader(inputReader, ConfigParseOptions.defaults().setAllowMissing(false));
-        return config;
+    private Config loadConfig(InputStream input) {
+        InputStreamReader inputReader = new InputStreamReader(input, UTF_8);
+        return ConfigFactory.parseReader(inputReader, ConfigParseOptions.defaults().setAllowMissing(false));
     }
 
-    private Config loadYamlConfig(final InputStream input) throws IOException {
-        final JsonNode node = mapper.readTree(yamlFactory.createParser(input));
-        final String jsonString = mapper.writeValueAsString(node);
-        final Config preConfig = ConfigFactory.parseString(jsonString, ConfigParseOptions.defaults().setAllowMissing(false));
-        final String render = preConfig.root().render(ConfigRenderOptions.defaults().setJson(false));
+    private Config loadYamlConfig(InputStream input) throws IOException {
+        JsonNode node = mapper.readTree(yamlFactory.createParser(input));
+        String jsonString = mapper.writeValueAsString(node);
+        Config preConfig = ConfigFactory.parseString(jsonString, ConfigParseOptions.defaults().setAllowMissing(false));
+        String render = preConfig.root().render(ConfigRenderOptions.defaults().setJson(false));
         return ConfigFactory.parseString(render.replaceAll("=\\s?\"([^$]?\\$.*?)\"", "=$1"), ConfigParseOptions.defaults().setSyntax(ConfigSyntax.CONF));
     }
 
-    private void logConfig(final Config finalConfig, final ConfigObject rootConfigObject) {
-        final String configFactoryLogKey = "logging.loggers.\"" + getClass().getName() + "\"";
+    private void logConfig(Config finalConfig, ConfigObject rootConfigObject) {
+        String configFactoryLogKey = "logging.loggers.\"" + getClass().getName() + "\"";
         if (finalConfig.hasPath(configFactoryLogKey)) {
             if (finalConfig.getString(configFactoryLogKey).equalsIgnoreCase("debug")) {
                 log.debug(rootConfigObject.render(ConfigRenderOptions.defaults().setComments(true).setOriginComments(false)));
@@ -103,31 +111,12 @@ public class TypeSafeConfigFactory<T> extends YamlConfigurationFactory<T> {
         }
     }
 
-    private Predicate<String> not(final Predicate<String> predicate) {
-        return predicate.negate();
-    }
-
-    private Config loadSecret(final String filename) {
-        final File file = new File(filename);
-        try(final InputStream input = new FileInputStream(file)){
-            if (filename.endsWith(".yml")) {
-                return loadYamlConfig(input);
-            } else {
-                return loadConfig(input);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static Function<String, Config> applyOverrides(final Config config) {
-        return env -> {
-            final String[] envs = env.split(",\\s?");
-            final Config envConfig = Stream.of(envs)
-                    .map(e -> ENVIRONMENTS_CONFIG_KEY + "." + e)
-                    .map(config::getConfig)
-                    .reduce(ConfigFactory.empty(), Config::withFallback);
-            return envConfig.withFallback(config);
-        };
+    private static Config applyOverrides(String envsSeparatedByComma, Config config) {
+        String[] envs = envsSeparatedByComma.split(",\\s?");
+        Config envConfig = Stream.of(envs)
+                .map(environment -> ENVIRONMENTS_CONFIG_KEY + "." + environment)
+                .map(environmentKey -> config.getConfig(environmentKey))
+                .reduce(ConfigFactory.empty(), Config::withFallback);
+        return envConfig.withFallback(config);
     }
 }

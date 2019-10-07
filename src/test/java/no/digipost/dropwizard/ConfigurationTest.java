@@ -4,7 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dropwizard.configuration.ConfigurationException;
 import io.dropwizard.configuration.ConfigurationFactory;
 import io.dropwizard.configuration.ConfigurationSourceProvider;
+import io.dropwizard.configuration.FileConfigurationSourceProvider;
+import io.dropwizard.configuration.ResourceConfigurationSourceProvider;
 import io.dropwizard.jackson.Jackson;
+import no.digipost.dropwizard.configuration.ConfigurationSourceProviderWithFallback;
 import org.hibernate.validator.HibernateValidator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -119,5 +122,6 @@ public class ConfigurationTest {
         System.setProperty(ENV_KEY, env);
     }
 
-    private ConfigurationSourceProvider configSourceProvider = new FileOrResourceConfigurationSourceProvider();
+    private final ConfigurationSourceProvider configSourceProvider =
+            new ConfigurationSourceProviderWithFallback(new FileConfigurationSourceProvider(), new ResourceConfigurationSourceProvider());
 }
