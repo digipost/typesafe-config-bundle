@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 
-import static java.time.temporal.ChronoUnit.NANOS;
 import static no.digipost.jackson.JsonDuration.supportedUnits;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -35,7 +34,7 @@ public class JsonDurationTest {
             .forAll(integers().all(), arbitrary().pick(supportedUnits))
             .checkAssert((amount, unit) -> {
                 JsonDuration parsed = JsonDuration.of(amount + " " + unit.name().toLowerCase());
-                assertThat(parsed.get(NANOS), is(Duration.of(amount, unit).get(NANOS)));
+                assertThat(parsed.duration.toMillis(), is(Duration.of(amount, unit).toMillis()));
             });
     }
 
