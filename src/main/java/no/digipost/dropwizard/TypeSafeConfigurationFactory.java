@@ -25,6 +25,7 @@ import java.io.InputStreamReader;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import static com.typesafe.config.ConfigFactory.defaultOverrides;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class TypeSafeConfigurationFactory<T> extends YamlConfigurationFactory<T> {
@@ -50,23 +51,23 @@ public class TypeSafeConfigurationFactory<T> extends YamlConfigurationFactory<T>
     public T build(ConfigurationSourceProvider sourceProvider, String path) throws IOException, ConfigurationException {
         Config loaded = loadConfig(sourceProvider, path);
 
-        Config config = loaded.resolveWith(ConfigFactory.defaultOverrides(), ConfigResolveOptions.defaults().setAllowUnresolved(true));
+        Config config = loaded.resolveWith(defaultOverrides(), ConfigResolveOptions.defaults().setAllowUnresolved(true));
 
-        String env = Stream.of(System.getProperty(ENV_KEY), System.getProperty(propertyPrefix + ENV_KEY))
-                .filter(envString -> envString != null && !envString.isEmpty())
-                .findFirst()
+        Stream<String> environments = firstAvailableSystemProperty(ENV_KEY, propertyPrefix + ENV_KEY)
+                .map(commaSeparatedEnvs -> Stream.of(commaSeparatedEnvs.split(",\\s?")))
                 .orElseThrow(() -> new RuntimeException(
                         "System.property " + ENV_KEY + " is required and must have a corresponding section in the config file. Example: -Denv=local"));
 
-        Config envConfig = applyOverrides(env, config);
+        Config envSpecificConfig = reduceToEnvironmentSpecific(environments, config);
 
-        Optional<Config> secretConfig = Optional.ofNullable(System.getProperty(SECRET_KEY)).map(secretsPath -> loadConfig(sourceProvider, secretsPath));
-        Config configWithSecrets = secretConfig.map(c -> c.withFallback(envConfig)).orElse(envConfig);
+        Config configWithSecrets = firstAvailableSystemProperty(SECRET_KEY)
+                .map(secretsPath -> loadConfig(sourceProvider, secretsPath))
+                .map(secretsConfig -> secretsConfig.withFallback(envSpecificConfig))
+                .orElse(envSpecificConfig);
 
-        Config finalConfig = configWithSecrets.withoutPath(ENVIRONMENTS_CONFIG_KEY);
-        ConfigObject rootConfigObject = finalConfig.resolve().withoutPath("variables").root();
+        ConfigObject rootConfigObject = configWithSecrets.resolve().withoutPath("variables").root();
 
-        logConfig(finalConfig, rootConfigObject);
+        logConfig(configWithSecrets, rootConfigObject);
 
         String configJsonString = rootConfigObject.render(ConfigRenderOptions.concise());
         return super.build(str -> new ByteArrayInputStream(configJsonString.getBytes(UTF_8)), path);
@@ -104,12 +105,18 @@ public class TypeSafeConfigurationFactory<T> extends YamlConfigurationFactory<T>
         }
     }
 
-    private static Config applyOverrides(String envsSeparatedByComma, Config config) {
-        String[] envs = envsSeparatedByComma.split(",\\s?");
-        Config envConfig = Stream.of(envs)
+    private static Optional<String> firstAvailableSystemProperty(String ... propertyNames) {
+        return Stream.of(propertyNames)
+            .map(System::getProperty)
+            .filter(property -> property != null && !property.isEmpty())
+            .findFirst();
+    }
+
+    private static Config reduceToEnvironmentSpecific(Stream<String> environments, Config config) {
+        Config envConfig = environments
                 .map(environment -> ENVIRONMENTS_CONFIG_KEY + "." + environment)
                 .map(environmentKey -> config.getConfig(environmentKey))
                 .reduce(ConfigFactory.empty(), Config::withFallback);
-        return envConfig.withFallback(config);
+        return envConfig.withFallback(config).withoutPath(ENVIRONMENTS_CONFIG_KEY);
     }
 }
