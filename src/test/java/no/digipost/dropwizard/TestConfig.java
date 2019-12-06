@@ -30,4 +30,13 @@ public class TestConfig {
 
     @JsonProperty
     public String environment;
+
+    @JsonProperty
+    public EnvironmentSpecificSecret secrets;
+}
+
+class EnvironmentSpecificSecret {
+    @JsonProperty
+    @NotNull
+    public String verySecret;
 }

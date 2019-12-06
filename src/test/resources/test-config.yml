@@ -6,6 +6,9 @@ database:
   user: test
   password: ${variables.testvar1}
 
+secrets:
+  verySecret: "not so secret"
+
 environments:
   local:
     variables:

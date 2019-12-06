@@ -37,11 +37,13 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
 import static com.typesafe.config.ConfigFactory.defaultOverrides;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.stream.Collectors.toList;
 
 public class TypeSafeConfigurationFactory<T> extends YamlConfigurationFactory<T> {
 
@@ -68,16 +70,17 @@ public class TypeSafeConfigurationFactory<T> extends YamlConfigurationFactory<T>
 
         Config config = loaded.resolveWith(defaultOverrides(), ConfigResolveOptions.defaults().setAllowUnresolved(true));
 
-        Stream<String> environments = firstAvailableSystemProperty(ENV_KEY, propertyPrefix + ENV_KEY)
+        List<String> environments = firstAvailableSystemProperty(ENV_KEY, propertyPrefix + ENV_KEY)
                 .map(commaSeparatedEnvs -> Stream.of(commaSeparatedEnvs.split(",\\s?")))
                 .orElseThrow(() -> new RuntimeException(
-                        "System.property " + ENV_KEY + " is required and must have a corresponding section in the config file. Example: -Denv=local"));
+                        "System.property " + ENV_KEY + " is required and must have a corresponding section in the config file. Example: -Denv=local"))
+                .collect(toList());
 
         Config envSpecificConfig = reduceToEnvironmentSpecific(environments, config);
 
         Config configWithSecrets = firstAvailableSystemProperty(SECRET_KEY)
                 .map(secretsPath -> loadConfig(sourceProvider, secretsPath))
-                .map(secretsConfig -> secretsConfig.withFallback(envSpecificConfig))
+                .map(secretsConfig -> reduceToEnvironmentSpecific(environments, secretsConfig).withFallback(envSpecificConfig))
                 .orElse(envSpecificConfig);
 
         ConfigObject rootConfigObject = configWithSecrets.resolve().withoutPath("variables").root();
@@ -127,9 +130,10 @@ public class TypeSafeConfigurationFactory<T> extends YamlConfigurationFactory<T>
             .findFirst();
     }
 
-    private static Config reduceToEnvironmentSpecific(Stream<String> environments, Config config) {
-        Config envConfig = environments
+    private static Config reduceToEnvironmentSpecific(List<String> environments, Config config) {
+        Config envConfig = environments.stream()
                 .map(environment -> ENVIRONMENTS_CONFIG_KEY + "." + environment)
+                .filter(environmentKey -> config.hasPath(environmentKey))
                 .map(environmentKey -> config.getConfig(environmentKey))
                 .reduce(ConfigFactory.empty(), Config::withFallback);
         return envConfig.withFallback(config).withoutPath(ENVIRONMENTS_CONFIG_KEY);
