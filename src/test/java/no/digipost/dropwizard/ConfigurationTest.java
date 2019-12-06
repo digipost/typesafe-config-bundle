@@ -76,24 +76,24 @@ class ConfigurationTest {
     @Test
     void should_use_default_values_when_environment_has_no_specific_value() throws IOException, ConfigurationException {
         setEnv("local");
-        final TestConfig config =
-                configFactory.build(configSourceProvider, "test-config.yml");
+
+        TestConfig config = configFactory.build(configSourceProvider, "test-config.yml");
         assertThat(config.database.getDriverClass(), is("org.postgresql.Driver"));
     }
 
     @Test
     void should_override_defaults_with_environment_specific_values() throws IOException, ConfigurationException {
         setEnv("test");
-        final TestConfig config =
-                configFactory.build(configSourceProvider, "test-config.yml");
+
+        TestConfig config = configFactory.build(configSourceProvider, "test-config.yml");
         assertThat(config.database.getDriverClass(), is("overridden"));
     }
 
     @Test
     void should_allow_empty_default_with_environment_specific_value() throws IOException, ConfigurationException {
         setEnv("test");
-        final TestConfig config =
-                configFactory.build(configSourceProvider, "test-config.yml");
+
+        TestConfig config = configFactory.build(configSourceProvider, "test-config.yml");
         assertThat(config.database.getUrl(), is("test_url"));
     }
 
@@ -101,32 +101,32 @@ class ConfigurationTest {
     void should_load_secret_config_from_file() throws IOException, ConfigurationException {
         setEnv("local");
         System.setProperty(TypeSafeConfigurationFactory.SECRET_KEY, getClass().getResource("/test-secret.yml").getFile());
-        final TestConfig config =
-                configFactory.build(configSourceProvider, "test-config.yml");
+
+        TestConfig config = configFactory.build(configSourceProvider, "test-config.yml");
         assertThat(config.database.getPassword(), is("secret_password"));
     }
 
     @Test
     void should_interpolate_variables() throws IOException, ConfigurationException {
         setEnv("test");
-        final TestConfig config =
-                configFactory.build(configSourceProvider, "test-config.yml");
+
+        TestConfig config = configFactory.build(configSourceProvider, "test-config.yml");
         assertThat(config.database.getPassword(), is("default variable value"));
     }
 
     @Test
     void should_interpolate_variables_with_overrides() throws IOException, ConfigurationException {
         setEnv("local");
-        final TestConfig config =
-                configFactory.build(configSourceProvider, "test-config.yml");
+
+        TestConfig config = configFactory.build(configSourceProvider, "test-config.yml");
         assertThat(config.database.getPassword(), is("overridden variable value"));
     }
 
     @Test
     void should_resolve_system_properties() throws IOException, ConfigurationException {
         setEnv("test2");
-        final TestConfig config =
-                configFactory.build(configSourceProvider, "test-config.yml");
+
+        TestConfig config = configFactory.build(configSourceProvider, "test-config.yml");
         assertThat(config.database.getDriverClass(), is("driverClassFromSystemProperty"));
     }
 
