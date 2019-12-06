@@ -107,6 +107,19 @@ class ConfigurationTest {
     }
 
     @Test
+    void supports_environment_specific_config_in_secret_config() throws IOException, ConfigurationException {
+        setEnv("test");
+        System.setProperty(TypeSafeConfigurationFactory.SECRET_KEY, getClass().getResource("/test-secret.yml").getFile());
+
+        TestConfig testEnvConfig = configFactory.build(configSourceProvider, "test-config.yml");
+        assertThat(testEnvConfig.secrets.verySecret, is("keep this to yourself!"));
+
+        setEnv("local");
+        TestConfig config = configFactory.build(configSourceProvider, "test-config.yml");
+        assertThat(config.secrets.verySecret, is("not so secret"));
+    }
+
+    @Test
     void should_interpolate_variables() throws IOException, ConfigurationException {
         setEnv("test");
 
