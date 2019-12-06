@@ -1,6 +1,8 @@
 # Typesafe config bundle for Dropwizard
 
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/no.digipost/typesafe-config-bundle/badge.svg)](https://maven-badges.herokuapp.com/maven-central/no.digipost/typesafe-config-bundle)
+![](https://github.com/digipost/typesafe-config-bundle/workflows/Build%20snapshot/badge.svg)
+[![License](https://img.shields.io/badge/license-Apache%202-blue)](https://github.com/digipost/typesafe-config-bundle/blob/master/LICENCE)
 
 ## Usage
 ```java
@@ -37,7 +39,3 @@ environments:
       user: test
       password: test
 ```
-
-## Releasing (Digipost organization members only)
-
-See docs/systemer/open-source-biblioteker.md
