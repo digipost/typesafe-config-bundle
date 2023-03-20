@@ -22,13 +22,13 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
-import static co.unruly.matchers.Java8Matchers.where;
 import static com.google.common.io.ByteStreams.toByteArray;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static uk.co.probablyfine.matchers.Java8Matchers.where;
 
 class ConfigurationSourceProviderWithFallbackTest {
 
