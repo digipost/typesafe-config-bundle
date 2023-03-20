@@ -28,10 +28,9 @@ import com.typesafe.config.ConfigSyntax;
 import io.dropwizard.configuration.ConfigurationException;
 import io.dropwizard.configuration.ConfigurationSourceProvider;
 import io.dropwizard.configuration.YamlConfigurationFactory;
+import jakarta.validation.Validator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.validation.Validator;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

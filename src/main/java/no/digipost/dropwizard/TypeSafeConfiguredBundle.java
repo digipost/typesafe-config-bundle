@@ -15,11 +15,11 @@
  */
 package no.digipost.dropwizard;
 
-import io.dropwizard.ConfiguredBundle;
 import io.dropwizard.configuration.ConfigurationSourceProvider;
 import io.dropwizard.configuration.FileConfigurationSourceProvider;
 import io.dropwizard.configuration.ResourceConfigurationSourceProvider;
-import io.dropwizard.setup.Bootstrap;
+import io.dropwizard.core.ConfiguredBundle;
+import io.dropwizard.core.setup.Bootstrap;
 import no.digipost.dropwizard.configuration.ConfigurationSourceProviderWithFallback;
 
 /**
