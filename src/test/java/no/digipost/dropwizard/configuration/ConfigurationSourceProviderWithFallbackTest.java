@@ -22,7 +22,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
-import static com.google.common.io.ByteStreams.toByteArray;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.instanceOf;
@@ -39,7 +38,7 @@ class ConfigurationSourceProviderWithFallbackTest {
                 (path) -> { throw new AssertionError("fallback should not be invoked"); });
 
         try (InputStream source = providerWithFallback.open("path")) {
-            assertThat(toByteArray(source), is("main".getBytes()));
+            assertThat(source.readAllBytes(), is("main".getBytes()));
         }
     }
 
@@ -50,7 +49,7 @@ class ConfigurationSourceProviderWithFallbackTest {
                 (path) -> new ByteArrayInputStream("fallback".getBytes()));
 
         try (InputStream source = providerWithFallback.open("path")) {
-            assertThat(new String(toByteArray(source)), is("fallback"));
+            assertThat(new String(source.readAllBytes()), is("fallback"));
         }
     }
 
