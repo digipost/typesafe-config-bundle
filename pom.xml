@@ -38,7 +38,7 @@
         <dependency>
             <groupId>com.typesafe</groupId>
             <artifactId>config</artifactId>
-            <version>1.4.5</version>
+            <version>1.4.6</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -121,7 +121,7 @@
         <dependency>
             <groupId>nl.jqno.equalsverifier</groupId>
             <artifactId>equalsverifier</artifactId>
-            <version>4.2.5</version>
+            <version>4.4.1</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -149,14 +149,14 @@
             <dependency>
                 <groupId>io.dropwizard</groupId>
                 <artifactId>dropwizard-bom</artifactId>
-                <version>5.0.0</version>
+                <version>5.0.1</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>io.dropwizard</groupId>
                 <artifactId>dropwizard-dependencies</artifactId>
-                <version>5.0.0</version>
+                <version>5.0.1</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
