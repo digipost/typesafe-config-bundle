@@ -41,6 +41,8 @@ import static java.util.stream.Collectors.toList;
 
 public final class JsonDuration implements TemporalAmount, Serializable {
 
+    private static final long serialVersionUID = 7565437081331942214L;
+
     public static final List<ChronoUnit> supportedUnits = unmodifiableList(Stream.of(ChronoUnit.values()).filter(u -> !u.isDurationEstimated() || u == DAYS).collect(toList()));
 
     public final long amount;
