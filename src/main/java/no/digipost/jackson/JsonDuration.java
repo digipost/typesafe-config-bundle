@@ -29,6 +29,12 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import static java.time.temporal.ChronoUnit.DAYS;
+import static java.time.temporal.ChronoUnit.HOURS;
+import static java.time.temporal.ChronoUnit.MICROS;
+import static java.time.temporal.ChronoUnit.MILLIS;
+import static java.time.temporal.ChronoUnit.MINUTES;
+import static java.time.temporal.ChronoUnit.NANOS;
+import static java.time.temporal.ChronoUnit.SECONDS;
 import static java.util.Collections.unmodifiableList;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
@@ -42,22 +48,51 @@ public final class JsonDuration implements TemporalAmount, Serializable {
     public final Duration duration;
     private final String stringRepresentation;
 
-    @JsonCreator
+    @Deprecated
     public static JsonDuration of(String jsonString) {
-        return new JsonDuration(jsonString);
+        return parse(jsonString);
     }
 
-    private JsonDuration(String jsonString) {
+    @JsonCreator
+    public static JsonDuration parse(String jsonString) {
         try {
             String[] amountAndUnit = jsonString.split("\\s+");
-            amount = Long.parseLong(amountAndUnit[0]);
-            ChronoUnit chronoUnit = ChronoUnit.valueOf(amountAndUnit[1].toUpperCase());
-            unit = chronoUnit;
-            duration = Duration.of(amount, unit);
-            stringRepresentation = amount + " " + chronoUnit.name();
+            long amount = Long.parseLong(amountAndUnit[0]);
+            ChronoUnit unit = ChronoUnit.valueOf(amountAndUnit[1].toUpperCase());
+            return new JsonDuration(amount, unit, null);
         } catch (Exception e) {
             throw new CannotConvertToJsonDuration(jsonString, e);
         }
+
+    }
+
+    public static JsonDuration from(Duration duration) {
+        long nanosPart = duration.toNanosPart();
+        if (nanosPart != 0) {
+            long totalNanos = duration.toNanos();
+            if (totalNanos % 1000 != 0) {
+                return new JsonDuration(totalNanos, NANOS, duration);
+            } else if (totalNanos % 1_000_000 != 0) {
+                return new JsonDuration(totalNanos / 1000, MICROS, duration);
+            } else {
+                return new JsonDuration(duration.toMillis(), MILLIS, duration);
+            }
+        } else if (duration.toSecondsPart() != 0) {
+            return new JsonDuration(duration.toSeconds(), SECONDS, duration);
+        } else if (duration.toMinutesPart() != 0) {
+            return new JsonDuration(duration.toMinutes(), MINUTES, duration);
+        } else if (duration.toHoursPart() != 0) {
+            return new JsonDuration(duration.toHours(), HOURS, duration);
+        } else {
+            return new JsonDuration(duration.toDays(), DAYS, duration);
+        }
+    }
+
+    private JsonDuration(long amount, ChronoUnit unit, Duration duration) {
+        this.amount = amount;
+        this.unit = unit;
+        this.stringRepresentation = amount + " " + unit.name();
+        this.duration = duration != null ? duration : Duration.of(amount, unit);
     }
 
 
@@ -110,4 +145,5 @@ public final class JsonDuration implements TemporalAmount, Serializable {
     public int hashCode() {
         return Objects.hash(duration);
     }
+
 }

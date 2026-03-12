@@ -16,57 +16,97 @@
 package no.digipost.jackson;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 
+import static java.time.temporal.ChronoUnit.DAYS;
+import static java.time.temporal.ChronoUnit.HOURS;
+import static java.time.temporal.ChronoUnit.MICROS;
+import static java.time.temporal.ChronoUnit.MILLIS;
+import static java.time.temporal.ChronoUnit.MINUTES;
+import static java.time.temporal.ChronoUnit.NANOS;
+import static java.time.temporal.ChronoUnit.SECONDS;
 import static no.digipost.jackson.JsonDuration.supportedUnits;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.quicktheories.QuickTheory.qt;
 import static org.quicktheories.generators.SourceDSL.arbitrary;
 import static org.quicktheories.generators.SourceDSL.integers;
+import static org.quicktheories.generators.SourceDSL.longs;
 import static org.quicktheories.generators.SourceDSL.strings;
+import static uk.co.probablyfine.matchers.Java8Matchers.where;
 
-public class JsonDurationTest {
+class JsonDurationTest {
 
     @Test
-    public void correctEqualsAndHashcode() {
+    void correctEqualsAndHashcode() {
         EqualsVerifier
-            .forRelaxedEqualExamples(JsonDuration.of("1 days"), JsonDuration.of("24 hours"), JsonDuration.of("1440 minutes"))
-            .andUnequalExamples(JsonDuration.of("4 days"), JsonDuration.of("5 days"), JsonDuration.of("1337 nanos"))
+            .forRelaxedEqualExamples(JsonDuration.parse("1 days"), JsonDuration.parse("24 hours"), JsonDuration.parse("1440 minutes"))
+            .andUnequalExamples(JsonDuration.parse("4 days"), JsonDuration.parse("5 days"), JsonDuration.parse("1337 nanos"))
             .verify();
 
-        assertThat(JsonDuration.of("1 days"), is(JsonDuration.of("24 hours")));
-        assertThat(JsonDuration.of("42 minutes"), not("42 minutes"));
+        assertThat(JsonDuration.parse("1 days"), is(JsonDuration.parse("24 hours")));
+        assertThat(JsonDuration.parse("42 minutes"), not("42 minutes"));
     }
 
     @Test
-    public void parsesUnitsSupportedByJavaTimeDuration() {
+    void parsesUnitsSupportedByJavaTimeDuration() {
         qt()
             .forAll(integers().all(), arbitrary().pick(supportedUnits))
             .checkAssert((amount, unit) -> {
-                JsonDuration parsed = JsonDuration.of(amount + " " + unit.name().toLowerCase());
+                JsonDuration parsed = JsonDuration.parse(amount + " " + unit.name().toLowerCase());
                 assertThat(parsed.duration.toMillis(), is(Duration.of(amount, unit).toMillis()));
             });
     }
 
     @Test
-    public void stringRepresentationOfItselfIsParsable() {
+    void stringRepresentationOfItselfIsParsable() {
         qt()
             .forAll(integers().all(), arbitrary().pick(supportedUnits))
-            .as((amount, unit) -> JsonDuration.of(amount + " " + unit.name()))
-            .checkAssert(parsed -> assertThat(JsonDuration.of(parsed.toString()), is(parsed)));
+            .as((amount, unit) -> JsonDuration.parse(amount + " " + unit.name()))
+            .checkAssert(parsed -> assertThat(JsonDuration.parse(parsed.toString()), is(parsed)));
 
     }
 
     @Test
-    public void unableToParseMalforedStrings() {
+    void unableToParseMalforedStrings() {
         qt()
             .forAll(strings().allPossible().ofLengthBetween(0, 100).assuming(s -> !s.matches("\\d+ \\w\\w+")))
-            .checkAssert(notParseable -> assertThrows(JsonDuration.CannotConvertToJsonDuration.class, () -> JsonDuration.of(notParseable)));
+            .checkAssert(notParseable -> assertThrows(JsonDuration.CannotConvertToJsonDuration.class, () -> JsonDuration.parse(notParseable)));
 
     }
+
+    @Nested
+    class ConvertFromDuration {
+        @Test
+        void resolvedAmountAndUnitIsEquivalentToTheDuration() {
+            qt()
+                .forAll(longs().all().map(Duration::ofNanos).map(JsonDuration::from))
+                .checkAssert(jsonDuration -> assertThat(Duration.of(jsonDuration.amount, jsonDuration.unit), is(jsonDuration.duration)));
+        }
+
+        @Test
+        void useASensibleLargestPossibleUnit() {
+            assertAll(
+                    () -> assertThat(JsonDuration.from(Duration.ofHours(24)), where(d -> d.unit, is(DAYS))),
+                    () -> assertThat(JsonDuration.from(Duration.ofHours(25)), where(d -> d.unit, is(HOURS))),
+                    () -> assertThat(JsonDuration.from(Duration.ofHours(25).plusSeconds(42)), where(d -> d.unit, is(SECONDS))),
+                    () -> assertThat(JsonDuration.from(Duration.ofHours(24).plusMinutes(10)), where(d -> d.unit, is(MINUTES))));
+        }
+
+        @Test
+        void handlesSubSecondUnits() {
+            assertAll(
+                    () -> assertThat(JsonDuration.from(Duration.ofNanos(1_000_000_000)), where(d -> d.unit, is(SECONDS))),
+                    () -> assertThat(JsonDuration.from(Duration.ofNanos(1_001_000_000)), where(d -> d.unit, is(MILLIS))),
+                    () -> assertThat(JsonDuration.from(Duration.ofNanos(1_001_001_000)), where(d -> d.unit, is(MICROS))),
+                    () -> assertThat(JsonDuration.from(Duration.ofNanos(1_001_001_001)), where(d -> d.unit, is(NANOS))));
+        }
+    }
+
 }
